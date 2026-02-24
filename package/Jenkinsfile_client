@@ -1,0 +1,166 @@
+/**
+ * Enterprise Playwright Framework — Client Jenkinsfile
+ *
+ * This pipeline is shipped to clients as part of the protected distribution.
+ * It uses the obfuscated framework CLI (framework.obf.js) to run tests.
+ *
+ * Jenkins requirements:
+ *   - Node.js 18+ installed (or NodeJS plugin configured)
+ *   - Allure Jenkins plugin (optional, for Allure reports)
+ *   - HTML Publisher plugin (for Playwright HTML reports)
+ *
+ * Parameters:
+ *   - ClientConfig : path to the client JSON config file
+ *   - TestFile     : (optional) specific test file to run
+ *   - GrepPattern  : (optional) filter tests by name
+ *   - Headed       : run browsers in headed mode
+ *   - Workers      : parallel worker count (0 = Playwright default)
+ */
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'ClientConfig',
+            choices: ['configs/client1.json', 'configs/client2.json'],
+            description: 'Client configuration file'
+        )
+        string(
+            name: 'TestFile',
+            defaultValue: '',
+            description: 'Specific test file to run (e.g. login.spec.js). Leave empty for all tests.'
+        )
+        string(
+            name: 'GrepPattern',
+            defaultValue: '',
+            description: 'Filter tests by name pattern (e.g. TC01). Leave empty for all.'
+        )
+        booleanParam(
+            name: 'Headed',
+            defaultValue: false,
+            description: 'Run browsers in headed mode (requires display)'
+        )
+        string(
+            name: 'Workers',
+            defaultValue: '0',
+            description: 'Parallel workers (0 = use config/Playwright default)'
+        )
+    }
+
+    options {
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '10'))
+    }
+
+    environment {
+        NODE_ENV     = 'production'
+        CI           = 'true'
+    }
+
+    stages {
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'npm ci --omit=dev'
+                    } else {
+                        bat 'npm ci --omit=dev'
+                    }
+                }
+            }
+        }
+
+        stage('Install Browsers') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'npx playwright install --with-deps chromium'
+                    } else {
+                        bat 'npx playwright install chromium'
+                    }
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Build the CLI command dynamically
+                    def cmd = "node framework.obf.js run --config ${params.ClientConfig}"
+
+                    if (params.TestFile?.trim()) {
+                        cmd += " --test ${params.TestFile.trim()}"
+                    }
+                    if (params.GrepPattern?.trim()) {
+                        cmd += " --grep \"${params.GrepPattern.trim()}\""
+                    }
+                    if (params.Headed) {
+                        cmd += ' --headed'
+                    }
+                    if (params.Workers?.trim() && params.Workers.trim() != '0') {
+                        cmd += " --workers ${params.Workers.trim()}"
+                    }
+
+                    echo "Executing: ${cmd}"
+
+                    catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        if (isUnix()) {
+                            sh cmd
+                        } else {
+                            bat cmd
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Publish Reports') {
+            parallel {
+                stage('Playwright HTML Report') {
+                    steps {
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'playwright-report',
+                            reportFiles: 'index.html',
+                            reportName: 'Playwright Report'
+                        ])
+                    }
+                }
+                stage('Allure Report') {
+                    when {
+                        expression { fileExists('allure-results') }
+                    }
+                    steps {
+                        allure([
+                            includeProperties: false,
+                            results: [[path: 'allure-results']]
+                        ])
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'playwright-report/**', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'allure-results/**', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'allure-report/**', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'test-results/**', fingerprint: true, allowEmptyArchive: true
+        }
+        success {
+            echo '✅ All tests passed!'
+        }
+        unstable {
+            echo '⚠️ Some tests failed — check the reports above.'
+        }
+        failure {
+            echo '❌ Pipeline failed — check console output for details.'
+        }
+    }
+}
