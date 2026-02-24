@@ -28,42 +28,20 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'npm install --production'
-                    } else {
-                        bat 'npm install --production'
-                    }
-                }
+                bat 'npm install'
             }
         }
 
         stage('Install Browsers') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'npx playwright install --with-deps chromium'
-                    } else {
-                        bat 'npx playwright install chromium'
-                    }
-                }
+                bat 'npx playwright install chromium'
             }
         }
 
         stage('Run Tests') {
             steps {
-                script {
-                    def cmd = "node framework.obf.js run --config configs/clientEG.json"
-
-                    echo "Executing: ${cmd}"
-
-                    catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                        if (isUnix()) {
-                            sh cmd
-                        } else {
-                            bat cmd
-                        }
-                    }
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'node framework.obf.js run --config configs/clientEG.json'
                 }
             }
         }
