@@ -17,7 +17,7 @@
     "test:lead": "npx playwright test src/tests/lead.spec.ts",
     "test:legacy": "npx playwright test tests/",
     "build": "node build.js",
-    "obfuscate": "npx javascript-obfuscator dist/framework.js --output dist/framework.obf.js --compact true --control-flow-flattening true --string-array true --string-array-encoding base64 --self-defending true --target node",
+    "obfuscate": "npx javascript-obfuscator dist/framework.js --output dist/framework.obf.js --config obfuscation.config.js",
     "protect": "npm run build && npm run obfuscate",
     "build:obfuscate": "node build.js --obfuscate",
     "build:package": "node build.js --all",
@@ -26,6 +26,7 @@
     "cli:license": "npx ts-node src/cli.ts license",
     "cli:version": "npx ts-node src/cli.ts version",
     "validate:deployment": "node scripts/validate-deployment.js",
+    "verify:obfuscation": "node scripts/verify-obfuscation.js",
     "allure:generate": "npx allure generate ./allure-results -o ./allure-report --clean",
     "allure:open": "npx allure open ./allure-report",
     "allure:serve": "npx allure serve ./allure-results"
