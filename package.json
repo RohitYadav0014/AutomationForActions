@@ -52,7 +52,6 @@
     "@types/node": "^25.0.9",
     "allure-commandline": "^2.36.0",
     "allure-playwright": "^3.4.5",
-    "dotenv": "^17.3.1",
     "esbuild": "^0.27.3",
     "javascript-obfuscator": "^4.2.2",
     "pkg": "^5.8.1",
@@ -61,6 +60,7 @@
   },
   "dependencies": {
     "@types/nodemailer": "^7.0.9",
+    "dotenv": "^17.3.1",
     "nodemailer": "^8.0.1"
   }
 }
