@@ -56,10 +56,10 @@ npx playwright install chromium
 ### Using Command Line
 ```bash
 # Run all tests
-node framework.obf.js run --config configs/clientEG.json
+node framework.obf.js run --config configs/clientEG.json --skip-license
 
 # Run in headed mode (see browser)
-node framework.obf.js run --config configs/clientEG.json --headed
+node framework.obf.js run --config configs/clientEG.json --skip-license --headed
 
 # Check version
 node framework.obf.js version

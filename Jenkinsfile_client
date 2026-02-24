@@ -41,7 +41,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    bat 'node framework.obf.js run --config configs/clientEG.json'
+                    bat 'node framework.obf.js run --config configs/clientEG.json --skip-license'
                 }
             }
         }
