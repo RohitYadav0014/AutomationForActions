@@ -30,9 +30,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'npm ci --omit=dev'
+                        sh 'npm install --production'
                     } else {
-                        bat 'npm ci --omit=dev'
+                        bat 'npm install --production'
                     }
                 }
             }
