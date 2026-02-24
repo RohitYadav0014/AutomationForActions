@@ -28,7 +28,17 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install'
+                bat '''
+                echo Cleaning old installation...
+                if exist node_modules rmdir /s /q node_modules
+                if exist package-lock.json del package-lock.json
+                
+                echo Clearing npx cache...
+                if exist "%LOCALAPPDATA%\\npm-cache\\_npx" rmdir /s /q "%LOCALAPPDATA%\\npm-cache\\_npx"
+                
+                echo Installing fresh dependencies...
+                npm install
+                '''
             }
         }
 
