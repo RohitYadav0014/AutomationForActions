@@ -8,45 +8,10 @@
  *   - Node.js 18+ installed (or NodeJS plugin configured)
  *   - Allure Jenkins plugin (optional, for Allure reports)
  *   - HTML Publisher plugin (for Playwright HTML reports)
- *
- * Parameters:
- *   - ClientConfig : path to the client JSON config file
- *   - TestFile     : (optional) specific test file to run
- *   - GrepPattern  : (optional) filter tests by name
- *   - Headed       : run browsers in headed mode
- *   - Workers      : parallel worker count (0 = Playwright default)
  */
 
 pipeline {
     agent any
-
-    parameters {
-        choice(
-            name: 'ClientConfig',
-            choices: ['configs/client1.json', 'configs/client2.json'],
-            description: 'Client configuration file'
-        )
-        string(
-            name: 'TestFile',
-            defaultValue: '',
-            description: 'Specific test file to run (e.g. login.spec.js). Leave empty for all tests.'
-        )
-        string(
-            name: 'GrepPattern',
-            defaultValue: '',
-            description: 'Filter tests by name pattern (e.g. TC01). Leave empty for all.'
-        )
-        booleanParam(
-            name: 'Headed',
-            defaultValue: false,
-            description: 'Run browsers in headed mode (requires display)'
-        )
-        string(
-            name: 'Workers',
-            defaultValue: '0',
-            description: 'Parallel workers (0 = use config/Playwright default)'
-        )
-    }
 
     options {
         timestamps()
@@ -88,21 +53,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    // Build the CLI command dynamically
-                    def cmd = "node framework.obf.js run --config ${params.ClientConfig}"
-
-                    if (params.TestFile?.trim()) {
-                        cmd += " --test ${params.TestFile.trim()}"
-                    }
-                    if (params.GrepPattern?.trim()) {
-                        cmd += " --grep \"${params.GrepPattern.trim()}\""
-                    }
-                    if (params.Headed) {
-                        cmd += ' --headed'
-                    }
-                    if (params.Workers?.trim() && params.Workers.trim() != '0') {
-                        cmd += " --workers ${params.Workers.trim()}"
-                    }
+                    def cmd = "node framework.obf.js run --config configs/clientEG.json"
 
                     echo "Executing: ${cmd}"
 

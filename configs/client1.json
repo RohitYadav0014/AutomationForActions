@@ -1,7 +1,7 @@
 {
-    "clientId": "CLIENT001",
-    "clientName": "Demo Client 1",
-    "projectName": "DemoProject",
+    "clientId": "ClientEG",
+    "clientName": "EncoreGlobal Demo Client",
+    "projectName": "EncoreGlobal Project",
     "suiteName": "DemoProject UI Test Suite",
     "suiteDescription": "Regression Testing",
     "crmUrl": "https://demo.us.espocrm.com/",

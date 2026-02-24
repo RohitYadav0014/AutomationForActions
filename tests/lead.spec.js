@@ -49,6 +49,36 @@ test_1.test.describe('EspoCRM Lead Management Tests', () => {
         loginPage = new LoginPage_1.LoginPage(page);
         leadPage = new LeadPage_1.LeadPage(page);
     });
+    test_1.test.afterAll(async ({ browser }) => {
+        console.log('📧 Generating and sending lead statistics email...');
+        try {
+            const page = await browser.newPage();
+            loginPage = new LoginPage_1.LoginPage(page);
+            leadPage = new LeadPage_1.LeadPage(page);
+            await loginPage.fullLogin(cfg.crmUrl);
+            await leadPage.navigateToLeads();
+            await leadPage.applyDateFilter('Last 7 Days');
+            await leadPage.verifyFilteredResultsVisible();
+            const newLeadsData = await leadPage.getNewLeadsData();
+            console.log(`📊 Found ${newLeadsData.length} leads from last 7 days`);
+            const newLeadsFilePath = path.join(__dirname, '..', '..', 'Data', 'newLeadLast7Days.html');
+            if (!fs.existsSync(path.dirname(newLeadsFilePath))) {
+                fs.mkdirSync(path.dirname(newLeadsFilePath), { recursive: true });
+            }
+            const htmlOutput = leadPage.generateLeadsHtmlReport(newLeadsData);
+            fs.writeFileSync(newLeadsFilePath, htmlOutput);
+            await leadPage.selectAllLeads();
+            const download = await leadPage.exportLeads('xlsx', true);
+            const downloadPath = path.join(__dirname, '..', '..', 'Data', 'LeadsExport.xlsx');
+            await download.saveAs(downloadPath);
+            await (0, email_util_1.sendDailyStatisticsEmail)(newLeadsFilePath, downloadPath);
+            console.log('✅ Lead statistics email sent successfully');
+            await page.close();
+        }
+        catch (error) {
+            console.error('❌ Lead statistics email failed:', error);
+        }
+    });
     async function loginAndNavigateToLeads(page) {
         await loginPage.fullLogin(cfg.crmUrl);
         await leadPage.navigateToLeads();
@@ -132,8 +162,8 @@ test_1.test.describe('EspoCRM Lead Management Tests', () => {
         console.log(`File downloaded to: ${downloadPath}, Size: ${stats.size} bytes`);
         console.log('TC07: Comprehensive export validation completed successfully');
     });
-    (0, test_1.test)('TC08: Email Validation', async ({ page }) => {
-        console.log('TC08: Starting email validation test');
+    (0, test_1.test)('TC08: Lead Report Generation and Validation', async ({ page }) => {
+        console.log('TC08: Starting lead report validation test');
         await loginAndNavigateToLeads(page);
         await leadPage.applyDateFilter('Last 7 Days');
         await leadPage.verifyFilteredResultsVisible();
@@ -155,13 +185,6 @@ test_1.test.describe('EspoCRM Lead Management Tests', () => {
         const stats = fs.statSync(downloadPath);
         (0, test_1.expect)(stats.size).toBeGreaterThan(0);
         console.log(`Excel report saved: ${downloadPath}, Size: ${stats.size} bytes`);
-        try {
-            await (0, email_util_1.sendDailyStatisticsEmail)(newLeadsFilePath, downloadPath);
-            console.log('✅ Email sent successfully');
-        }
-        catch (error) {
-            console.error('❌ Email failed:', error);
-        }
         console.log('TC08 completed successfully');
     });
 });
